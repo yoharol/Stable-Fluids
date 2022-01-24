@@ -2,6 +2,35 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
+class FPS_Counter
+{
+  private:
+    int count;
+    double start_time;
+
+  public:
+    void ResetCounter()
+    {
+        count = 0;
+        start_time = glfwGetTime();
+    }
+
+    double GetTime()
+    {
+        return glfwGetTime() - start_time;
+    }
+
+    void AddCount()
+    {
+        count++;
+    }
+
+    int GetFPS()
+    {
+        return count / (glfwGetTime() - start_time);
+    }
+};
+
 void InitGlew()
 {
     // Load glew
