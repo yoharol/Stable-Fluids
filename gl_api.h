@@ -43,6 +43,8 @@ void UpdateWindow(GLFWwindow *window);
 
 void EndGL(GLFWwindow *window);
 
+/* Implementation of method with templates*/
+
 template <typename VEC, typename SCALAR = typename VEC::Scalar>
 inline VEC world_to_screen(const int N, const int M, int x, int y, SCALAR halfdx, SCALAR halfdy)
 {
