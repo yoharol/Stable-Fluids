@@ -1,7 +1,7 @@
+#include "gl_api.h"
+#include "solver.h"
+#include "stable_fluid.h"
 #include <Eigen/Core>
-#include <gl_api.h>
-#include <solver.h>
-#include <stable_fluid.h>
 
 using VEC = Eigen::Vector2f;
 using SCALAR = typename VEC::Scalar;
@@ -9,7 +9,7 @@ using SCALAR = typename VEC::Scalar;
 int main()
 {
 
-    const int N = 256; // width
+    const int N = 156; // width
     const int M = 128; // height
     const int NN = N * M;
 
@@ -45,7 +45,7 @@ int main()
         vel_tex.Swap();
         dye_tex.Swap();
 
-        add_source<VEC>(N, N * 0.5f, M * 0.8f, 5, 0.8f, *dye_tex.cur, *vel_tex.cur);
+        add_source<VEC>(N, N * 0.9f, M * 0.9f, 6, 0.8f, *dye_tex.cur, *vel_tex.cur);
         apply_force<VEC>(N, M, *vel_tex.cur, damping, g, dt);
 
         get_divergence<VEC>(N, M, *vel_tex.cur, divergence);

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.17)
 
 set(CMAKE_BUILD_TYPE "Release")
 
@@ -13,12 +13,12 @@ add_executable(demo)
 target_sources(demo
     PRIVATE
     ${CMAKE_SOURCE_DIR}/main.cpp
-    ${CMAKE_SOURCE_DIR}/gl_api.cpp
+    ${CMAKE_SOURCE_DIR}/src/gl_api.cpp
 )
 
 target_include_directories(demo
     PRIVATE
-    "${CMAKE_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/include"
 )
 
 target_link_libraries(demo
