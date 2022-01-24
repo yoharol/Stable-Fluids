@@ -13,6 +13,7 @@ add_executable(demo)
 target_sources(demo
     PRIVATE
     ${CMAKE_SOURCE_DIR}/main.cpp
+    ${CMAKE_SOURCE_DIR}/gl_api.cpp
 )
 
 target_include_directories(demo
