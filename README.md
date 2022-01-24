@@ -1,4 +1,4 @@
-This project applies the most basic fluid simulation:
+This project implements the most basic fluid simulation:
 
 - All physics properties are defined in centered-grid
 - Linear equations are solved with Gauss-Seidel method
@@ -8,7 +8,7 @@ This project applies the most basic fluid simulation:
 
 ## Compile
 
-Build Tool: Cmake
+Build Tool: CMAKE
 
 External libraries required:
 
