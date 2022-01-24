@@ -18,7 +18,7 @@ find_package(GLEW REQUIRED)
 find_package(Eigen3 REQUIRED)
 ```
 
-(To build this project on windows, [vcpkg]([microsoft/vcpkg: C++ Library Manager for Windows, Linux, and MacOS (github.com)](https://github.com/Microsoft/vcpkg)) is recommended.)
+(To build this project on windows, (vcpkg)(https://github.com/Microsoft/vcpkg) is recommended.)
 
 ## Future Plan
 
