@@ -1,3 +1,4 @@
+//#include <Eigen/Core>
 #include <Eigen/Core>
 #include <random>
 
@@ -10,8 +11,8 @@ using SCALAR = typename VEC::Scalar;
 int main()
 {
 
-    const int N = 156; // width
-    const int M = 128; // height
+    const int N = 256; // width
+    const int M = 256; // height
     const int NN = N * M;
 
     SCALAR dt = 0.03f;
@@ -44,11 +45,9 @@ int main()
     glapi::gl_allocate_gltex(texName);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, M, 0, GL_RED, GL_UNSIGNED_BYTE, color_buffer);
 
-    int count = 5;
     std::mt19937 rndeng(std::random_device{}());
-    std::uniform_real_distribution<SCALAR> rndf(0.2f, 0.8f);
     std::uniform_real_distribution<SCALAR> rnda(-1.0f, 1.0f);
-    std::uniform_real_distribution<SCALAR> rndr(10, 30);
+    std::uniform_real_distribution<SCALAR> rndr(static_cast<SCALAR>(N) * 0.08f, static_cast<SCALAR>(N) * 0.23f);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -57,12 +56,15 @@ int main()
         vel_tex.Swap();
         dye_tex.Swap();
 
-        if (count == 5)
+        int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+        if (state == GLFW_PRESS)
         {
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            int pos_x = static_cast<int>(xpos);
+            int pos_y = M - static_cast<int>(ypos);
             int r;
-            SCALAR pos_x = N * rndf(rndeng);
             r = min(pos_x - 1, N - pos_x - 1);
-            SCALAR pos_y = M * rndf(rndeng);
             r = min(r, min(pos_y - 1, M - pos_y - 1));
             r = min(r, rndr(rndeng));
             VEC dir(rnda(rndeng), rnda(rndeng));
@@ -72,9 +74,7 @@ int main()
             assert(pos_y - r >= 0);
             assert(pos_y + r < M);
             add_source<VEC>(N, pos_x, pos_y, r, 3.0f, dir, dye_tex.cur, vel_tex.cur);
-            count = 0;
         }
-        count++;
 
         apply_force<VEC>(N, M, vel_tex.cur, g, dt);
 
