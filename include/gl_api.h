@@ -35,13 +35,22 @@ class FPS_Counter
     }
 };
 
-void InitGlew();
+namespace glapi
+{
 
-GLFWwindow *CreateWindow(const int width, const int height, char *window_name);
+void glew_init();
 
-void UpdateWindow(GLFWwindow *window);
+GLFWwindow *gl_create_window(const int width, const int height, char *window_name);
 
-void EndGL(GLFWwindow *window);
+void gl_update_window(GLFWwindow *window);
+
+void gl_end(GLFWwindow *window);
+
+void gl_allocate_gltex(GLuint &texName);
+
+void gl_draw_tex2d(const GLuint texName);
+
+} // namespace glapi
 
 /* Implementation of method with templates*/
 

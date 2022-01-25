@@ -1,39 +1,57 @@
 #ifndef STABLE_FLUID
 #define STABLE_FLUID
-#define min(x, y) (x) < (y) ? (x) : (y)
-#define max(x, y) (x) > (y) ? (x) : (y)
+#define min(x, y) ((x) < (y) ? (x) : (y))
+#define max(x, y) ((x) > (y) ? (x) : (y))
 
 #include <Eigen/Core>
+#include <cassert>
 #include <cmath>
 #include <vector>
 
+/**
+ * @brief Data aggregation of current and next frame
+ *
+ * @tparam T the type of data stored in aggregation
+ */
 template <typename T> struct TexPair
 {
   public:
-    T *cur;
-    T *nxt;
-    TexPair(T &a, T &b)
+    T &cur;
+    T &nxt;
+    TexPair(T &a, T &b) : cur(a), nxt(b)
     {
-        cur = &a;
-        nxt = &b;
     }
     void Swap()
     {
-        T *tmp = cur;
-        cur = nxt;
-        nxt = tmp;
+        std::swap(cur, nxt);
     }
 };
 
+/**
+ * @brief Get index of 1d array out of 2d index (i,j)
+ *
+ * @param i index of x-axis
+ * @param j index of y-axis
+ * @param N width of 2d array
+ */
 inline int IXY(int i, int j, int N)
 {
     return N * j + i;
 }
+
 template <typename T, typename SCALAR> inline T lerp(T l, T r, SCALAR t)
 {
     return l + t * (r - l);
 }
 
+template <typename SCALAR> inline bool check_in_range(SCALAR a, SCALAR b, SCALAR t)
+{
+    return (a > t) || (b < t);
+}
+
+/**
+ * @brief Get qf[u, v]
+ */
 template <typename T, typename SCALAR>
 T sample(const int N, const int M, const std::vector<T> &qf, const SCALAR u, const SCALAR v)
 {
@@ -44,6 +62,13 @@ T sample(const int N, const int M, const std::vector<T> &qf, const SCALAR u, con
     return qf[IXY(x, y, N)];
 }
 
+/**
+ * @brief Bilinear interpolation
+ *
+ * @param N width
+ * @param M height
+ * @param p position to interpolate at
+ */
 template <typename T, typename VEC, typename SCALAR = typename VEC::Scalar>
 T bilerp(const int N, const int M, const std::vector<T> &qf, const VEC &p)
 {
@@ -60,6 +85,13 @@ T bilerp(const int N, const int M, const std::vector<T> &qf, const VEC &p)
     return lerp<T, SCALAR>(lerp<T, SCALAR>(a, b, fu), lerp<T, SCALAR>(c, d, fu), fv);
 }
 
+/**
+ * @brief Locate which point will move to position p in next dt time
+ *
+ * @param N width
+ * @param M height
+ * @param vel velocity field
+ */
 template <typename VEC, typename SCALAR = typename VEC::Scalar>
 VEC backtrace(const int N, const int M, VEC p, SCALAR dt, const std::vector<VEC> &vel)
 {
@@ -69,12 +101,19 @@ VEC backtrace(const int N, const int M, VEC p, SCALAR dt, const std::vector<VEC>
     VEC p2(p(0) - 0.75 * dt * v2(0), p(1) - 0.75 * dt * v2(1));
     VEC v3(bilerp<VEC, VEC>(N, M, vel, p2));
     p = p + (-1.f) * dt * ((2.f / 9.f) * v1 + (1.f / 3.f) * v2 + (4.f / 9.f) * v3);
-    return p;
+    return p * 0.9999f;
 }
 
+/**
+ * @brief update advection of fluid property qf
+ * @param N width
+ * @param M height
+ * @param vel velocity
+ * @param dt time interval
+ */
 template <typename T, typename VEC, typename SCALAR = typename VEC::Scalar>
 void advection(const int N, const int M, const std::vector<VEC> &vel, const std::vector<T> &qf, std::vector<T> &new_qf,
-               SCALAR dt)
+               SCALAR dt, SCALAR damping = 0.9999f)
 {
     for (int i = 0; i < N; i++)
     {
@@ -82,24 +121,37 @@ void advection(const int N, const int M, const std::vector<VEC> &vel, const std:
         {
             VEC p(i, j);
             p += VEC(.5f, .5f);
-            p = backtrace<VEC>(N, M, p, dt, vel);
+            p = backtrace<VEC>(N, M, p, dt, vel) * damping;
 
             new_qf[IXY(i, j, N)] = bilerp<T, VEC>(N, M, qf, p);
         }
     }
 }
 
+/**
+ * @brief apply global forces and damping
+ * @param N width
+ * @param M height
+ * @param vel velocity field
+ * @param g scale of gravity(-9.8f as default)
+ * @param dt time interval
+ */
 template <typename VEC, typename SCALAR = typename VEC::Scalar>
-void apply_force(const int N, const int M, std::vector<VEC> &vel, const SCALAR &damping, const SCALAR g,
-                 const SCALAR dt)
+void apply_force(const int N, const int M, std::vector<VEC> &vel, const SCALAR g = -9.8f, const SCALAR dt = 0.03f)
 {
     for (int i = 0; i < N * M; i++)
     {
         vel.at(i) += VEC(0, g * 1.0 * dt);
-        vel.at(i) *= damping;
     }
 }
 
+/**
+ * @brief Get the divergence of velocity field
+ * @param N width
+ * @param M height
+ * @param vel velocity field
+ * @param divergence divergence of velocity field
+ */
 template <typename VEC, typename SCALAR = typename VEC::Scalar>
 void get_divergence(const int N, const int M, const std::vector<VEC> &vel, std::vector<SCALAR> &divergence)
 {
@@ -124,6 +176,36 @@ void get_divergence(const int N, const int M, const std::vector<VEC> &vel, std::
         }
 }
 
+/**
+ * @brief Single iteration of gauss-sidel method
+ * @param N width
+ * @param M height
+ * @param pressure pressure field
+ * @param divergence divergence of velocity field
+ */
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+void pressure_gauss_sidel(const int N, const int M, const std::vector<SCALAR> &divergence,
+                          const std::vector<SCALAR> &pressure, std::vector<SCALAR> &new_pressure)
+{
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+        {
+            SCALAR pl = sample<SCALAR, SCALAR>(N, M, pressure, i - 1, j);
+            SCALAR pr = sample<SCALAR, SCALAR>(N, M, pressure, i + 1, j);
+            SCALAR pb = sample<SCALAR, SCALAR>(N, M, pressure, i, j - 1);
+            SCALAR pt = sample<SCALAR, SCALAR>(N, M, pressure, i, j + 1);
+            SCALAR diver = divergence[IXY(i, j, N)];
+            new_pressure.at(IXY(i, j, N)) = (pl + pr + pb + pt + (-1.f) * diver) * 0.25f;
+        }
+}
+
+/**
+ * @brief Apply pressure to velocity field
+ * @param N width
+ * @param M height
+ * @param vel velocity field
+ * @param pressure pressure field
+ */
 template <typename VEC, typename SCALAR = typename VEC::Scalar>
 void subtract_gradient(const int N, const int M, std::vector<VEC> &vel, const std::vector<SCALAR> &pressure)
 {
@@ -138,42 +220,62 @@ void subtract_gradient(const int N, const int M, std::vector<VEC> &vel, const st
         }
 }
 
-template <typename SCALAR> SCALAR smooth_step(SCALAR a, SCALAR b, SCALAR x)
+template <typename SCALAR> SCALAR smooth_step(SCALAR a, SCALAR x)
 {
-    SCALAR y = (x - a) / (b - a);
+    SCALAR y = (a - x) / a;
     if (y < 0.0)
         y = 0.0;
     if (y > 1.0)
         y = 1.0;
-    SCALAR rst = y * y * (3.0 - 2.0 * y);
+    SCALAR rst = y * y;
     return rst;
 }
 
+/**
+ * @brief add round-shape fluid momentum at point [x,y]
+ *
+ * @param N width
+ * @param x x-position
+ * @param y y-position
+ * @param r radius
+ * @param dir direction of added velocity
+ * @param dye color
+ * @param vel velocity field
+ * @param value scale of added color and velocity
+ */
 template <typename VEC, typename SCALAR = typename VEC::Scalar>
-void add_source(const int N, int x, int y, int r, SCALAR value, std::vector<SCALAR> &dye, std::vector<VEC> &vel)
+void add_source(const int N, int x, int y, int r, SCALAR value, VEC dir, std::vector<SCALAR> &dye,
+                std::vector<VEC> &vel)
 {
-    for (int index = 0; index < (2 * r + 1) * (2 * r + 1); index++)
-    {
-        int i = (SCALAR)index / (2 * r + 1) - r;
-        int j = index % (2 * r + 1) - r;
-        SCALAR smooth = smooth_step<SCALAR>(r * r, 0.0, i * i + j * j);
-        dye.at(IXY(x + i, y + j, N)) += value * smooth;
-        vel.at(IXY(x + i, y + j, N)) += VEC(0, -value * smooth * 100.0f);
-    }
+    for (int i = -r; i <= r; i++)
+        for (int j = -r; j <= r; j++)
+        {
+            int index = IXY(x + i, y + j, N);
+            SCALAR smooth = smooth_step<SCALAR>(r * r, i * i + j * j);
+            smooth *= value;
+            // smooth = min(smooth, 1.0f - dye[index]);
+            dye[index] = min(smooth + dye[index], 3.0f);
+            vel[index] += dir * smooth * 100.0f;
+        }
 }
 
+/**
+ * @brief Fill scalar field sf into color buffer
+ * @param N width
+ * @param M height
+ * @param sf scalar field to show
+ */
 template <typename SCALAR>
-void fill_color_s(const int N, const int M, const std::vector<SCALAR> &sf, std::vector<SCALAR> &color_buffer)
+void fill_color_buffer(const int N, const int M, const std::vector<SCALAR> &sf, unsigned char color_buffer[])
 {
     for (int i = 0; i < N; i++)
-    {
         for (int j = 0; j < M; j++)
         {
-            SCALAR s = log(sf[IXY(i, j, N)] * 0.25f + 1.0f);
-            SCALAR s3 = s * s * s;
-            color_buffer[IXY(i, j, N)] = abs(1.5f * s);
+            int index = IXY(i, j, N);
+            SCALAR s = log(sf[index] * 0.25f + 1.0f);
+            SCALAR s3 = 4.0f * s * s * s;
+            color_buffer[index] = static_cast<unsigned char>(255.f * min(s3, 1.0f));
         }
-    }
 }
 
 #endif

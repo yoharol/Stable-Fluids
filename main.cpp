@@ -1,7 +1,8 @@
-#include "gl_api.h"
-#include "solver.h"
-#include "stable_fluid.h"
 #include <Eigen/Core>
+#include <random>
+
+#include "gl_api.h"
+#include "stable_fluid.h"
 
 using VEC = Eigen::Vector2f;
 using SCALAR = typename VEC::Scalar;
@@ -16,7 +17,7 @@ int main()
     SCALAR dt = 0.03f;
     SCALAR dx = 1.f;
     SCALAR damping = 0.9999f;
-    int p_solver_iters = 40;
+    int p_solver_iters = 80;
     SCALAR g = -9.8f;
 
     std::vector<VEC> vel(NN, VEC::Zero());
@@ -26,37 +27,69 @@ int main()
     std::vector<SCALAR> new_pressure(NN, 0);
     std::vector<SCALAR> dye(NN, 0);
     std::vector<SCALAR> new_dye(NN, 0);
-    std::vector<SCALAR> color_buffer(NN, 0);
+    // std::vector<SCALAR> color_buffer(NN, 0);
+    unsigned char color_buffer[N * M];
 
     TexPair<std::vector<VEC>> vel_tex(vel, new_vel);
     TexPair<std::vector<SCALAR>> pressure_tex(pressure, new_pressure);
     TexPair<std::vector<SCALAR>> dye_tex(dye, new_dye);
 
-    GLFWwindow *window = CreateWindow(N, M, "stable fuild");
+    GLFWwindow *window = glapi::gl_create_window(N, M, "stable fuild");
 
     FPS_Counter counter;
     counter.ResetCounter();
     printf("FPS:");
 
+    GLuint texName;
+    glapi::gl_allocate_gltex(texName);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, M, 0, GL_RED, GL_UNSIGNED_BYTE, color_buffer);
+
+    int count = 5;
+    std::mt19937 rndeng(std::random_device{}());
+    std::uniform_real_distribution<SCALAR> rndf(0.2f, 0.8f);
+    std::uniform_real_distribution<SCALAR> rnda(-1.0f, 1.0f);
+    std::uniform_real_distribution<SCALAR> rndr(10, 30);
+
     while (!glfwWindowShouldClose(window))
     {
-        advection<VEC, VEC>(N, M, *vel_tex.cur, *vel_tex.cur, *vel_tex.nxt, dt);
-        advection<SCALAR, VEC>(N, M, *vel_tex.cur, *dye_tex.cur, *dye_tex.nxt, dt);
+        advection<VEC, VEC>(N, M, vel_tex.cur, vel_tex.cur, vel_tex.nxt, dt, damping);
+        advection<SCALAR, VEC>(N, M, vel_tex.cur, dye_tex.cur, dye_tex.nxt, dt, damping);
         vel_tex.Swap();
         dye_tex.Swap();
 
-        add_source<VEC>(N, N * 0.9f, M * 0.9f, 6, 0.8f, *dye_tex.cur, *vel_tex.cur);
-        apply_force<VEC>(N, M, *vel_tex.cur, damping, g, dt);
+        if (count == 5)
+        {
+            int r;
+            SCALAR pos_x = N * rndf(rndeng);
+            r = min(pos_x - 1, N - pos_x - 1);
+            SCALAR pos_y = M * rndf(rndeng);
+            r = min(r, min(pos_y - 1, M - pos_y - 1));
+            r = min(r, rndr(rndeng));
+            VEC dir(rnda(rndeng), rnda(rndeng));
+            dir.normalize();
+            assert(pos_x - r >= 0);
+            assert(pos_x + r < N);
+            assert(pos_y - r >= 0);
+            assert(pos_y + r < M);
+            add_source<VEC>(N, pos_x, pos_y, r, 3.0f, dir, dye_tex.cur, vel_tex.cur);
+            count = 0;
+        }
+        count++;
 
-        get_divergence<VEC>(N, M, *vel_tex.cur, divergence);
+        apply_force<VEC>(N, M, vel_tex.cur, g, dt);
+
+        get_divergence<VEC>(N, M, vel_tex.cur, divergence);
         for (int i = 0; i < p_solver_iters; i++)
         {
-            pressure_gauss_sidel<VEC>(N, M, divergence, *pressure_tex.cur, *pressure_tex.nxt);
+            pressure_gauss_sidel<VEC>(N, M, divergence, pressure_tex.cur, pressure_tex.nxt);
             pressure_tex.Swap();
         }
-        subtract_gradient<VEC>(N, M, *vel_tex.cur, *pressure_tex.cur);
+        subtract_gradient<VEC>(N, M, vel_tex.cur, pressure_tex.cur);
 
-        fill_color_s<SCALAR>(N, M, *dye_tex.cur, color_buffer);
+        fill_color_buffer(N, M, dye_tex.cur, color_buffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, M, 0, GL_RED, GL_UNSIGNED_BYTE, color_buffer);
+
+        glapi::gl_draw_tex2d(texName);
 
         counter.AddCount();
         if (counter.GetTime() >= 1.0)
@@ -64,8 +97,8 @@ int main()
             printf("\rFPS: %d", counter.GetFPS());
             counter.ResetCounter();
         }
-        DrawArray<VEC>(N, M, color_buffer);
-        UpdateWindow(window);
+        // DrawArray<VEC>(N, M, color_buffer);
+        glapi::gl_update_window(window);
     }
-    EndGL(window);
+    glapi::gl_end(window);
 }
