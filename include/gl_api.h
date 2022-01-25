@@ -1,10 +1,12 @@
 #ifndef GL_API
 #define GL_API
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
+
+#include "glad/glad.h"
+
+#include <GLFW/glfw3.h>
 
 class FPS_Counter
 {
@@ -38,7 +40,7 @@ class FPS_Counter
 namespace glapi
 {
 
-void glew_init();
+bool glad_init();
 
 GLFWwindow *gl_create_window(const int width, const int height, char *window_name);
 
