@@ -2,23 +2,27 @@ This project implements the most basic fluid simulation:
 
 - All physics properties are defined in centered-grid
 - Linear equations are solved with Gauss-Seidel method
-- Single thread
+- Single thread but good performance
 
 ![thumbnail](thumbnail.png)
 
-## Compile
+## How to play
 
-Build Tool: CMAKE
+Download [windows build](https://github.com/yoharol/Stable-Fluids/releases/tag/v1.0)
 
-External libraries required:
+Click on screen to add random momentum
 
-```cmake
-find_package(glfw3 REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(Eigen3 REQUIRED)
+## Compile and Run
+
+There's no external package required.
+
+```shell
+mkdir build
+cd ./build
+cmake ..
+cmake --build .
+./demo
 ```
-
-(To build this project on windows, [vcpkg](https://github.com/Microsoft/vcpkg) is recommended.)
 
 ## Future Plan
 
