@@ -49,6 +49,8 @@ int main()
     std::uniform_real_distribution<SCALAR> rnda(-1.0f, 1.0f);
     std::uniform_real_distribution<SCALAR> rndr(static_cast<SCALAR>(N) * 0.08f, static_cast<SCALAR>(N) * 0.23f);
 
+    add_source<VEC>(N, N / 2, M / 2, N / 10, 3.0f, -VEC::UnitY(), dye_tex.cur, vel_tex.cur);
+
     while (!glfwWindowShouldClose(window))
     {
         advection<VEC, VEC>(N, M, vel_tex.cur, vel_tex.cur, vel_tex.nxt, dt, damping);
