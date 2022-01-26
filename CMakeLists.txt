@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 3.17)
 
-set(CMAKE_BUILD_TYPE "Release")
-
 project(fluid_simulation)
 
+set(CMAKE_BUILD_TYPE "Release")
 
-find_package(glfw3 REQUIRED PATHS ${CMAKE_SOURCE_DIR}/external)
+find_package(glfw3 REQUIRED)
+if(glfw3_FOUND)
+    message("glfw3 loaded: ${glfw3_DIR}")
+endif()
+
+find_package(Eigen3 REQUIRED)
+if(glfw3_FOUND)
+    message("glfw3 loaded: ${glfw3_DIR}")
+endif()
+
+find_package(glfw3 REQUIRED)
 if(glfw3_FOUND)
     message("glfw3 loaded: ${glfw3_DIR}")
 endif()
@@ -27,4 +36,5 @@ target_include_directories(demo
 target_link_libraries(demo
     PRIVATE
     glfw
+    Eigen3::Eigen
 )

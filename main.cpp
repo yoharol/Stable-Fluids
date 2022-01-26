@@ -35,7 +35,8 @@ int main()
     TexPair<std::vector<SCALAR>> pressure_tex(pressure, new_pressure);
     TexPair<std::vector<SCALAR>> dye_tex(dye, new_dye);
 
-    GLFWwindow *window = glapi::gl_create_window(N, M, "stable fuild");
+    char window_name[13] = "stable fluid";
+    GLFWwindow *window = glapi::gl_create_window(N, M, window_name);
 
     FPS_Counter counter;
     counter.ResetCounter();
@@ -51,6 +52,8 @@ int main()
 
     add_source<VEC>(N, N / 2, M / 2, N / 10, 3.0f, -VEC::UnitY(), dye_tex.cur, vel_tex.cur);
 
+    double previous_click = 0.;
+
     while (!glfwWindowShouldClose(window))
     {
         advection<VEC, VEC>(N, M, vel_tex.cur, vel_tex.cur, vel_tex.nxt, dt, damping);
@@ -59,16 +62,17 @@ int main()
         dye_tex.Swap();
 
         int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-        if (state == GLFW_PRESS)
+        if (state == GLFW_PRESS && glfwGetTime() - previous_click > 0.1)
         {
+            previous_click = glfwGetTime();
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
             int pos_x = static_cast<int>(xpos);
             int pos_y = M - static_cast<int>(ypos);
             int r;
-            r = min(pos_x - 1, N - pos_x - 1);
-            r = min(r, min(pos_y - 1, M - pos_y - 1));
-            r = min(r, rndr(rndeng));
+            r = min<int>(pos_x - 1, N - pos_x - 1);
+            r = min<int>(r, min(pos_y - 1, M - pos_y - 1));
+            r = min<int>(r, rndr(rndeng));
             VEC dir(rnda(rndeng), rnda(rndeng));
             dir.normalize();
             assert(pos_x - r >= 0);
@@ -93,12 +97,12 @@ int main()
 
         glapi::gl_draw_tex2d(texName);
 
-        counter.AddCount();
+        /*counter.AddCount();
         if (counter.GetTime() >= 1.0)
         {
             printf("\rFPS: %d", counter.GetFPS());
             counter.ResetCounter();
-        }
+        }*/
         // DrawArray<VEC>(N, M, color_buffer);
         glapi::gl_update_window(window);
     }

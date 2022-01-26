@@ -1,12 +1,11 @@
 #ifndef STABLE_FLUID
 #define STABLE_FLUID
-#define min(x, y) ((x) < (y) ? (x) : (y))
-#define max(x, y) ((x) > (y) ? (x) : (y))
 
-#include <Eigen/Core>
 #include <cassert>
 #include <cmath>
 #include <vector>
+
+#include <iostream>
 
 /**
  * @brief Data aggregation of current and next frame
@@ -27,6 +26,14 @@ template <typename T> struct TexPair
     }
 };
 
+template <typename T> inline T min(T a, T b)
+{
+    return a < b ? a : b;
+}
+template <typename T> inline T max(T a, T b)
+{
+    return a > b ? a : b;
+}
 /**
  * @brief Get index of 1d array out of 2d index (i,j)
  *
@@ -56,9 +63,9 @@ template <typename T, typename SCALAR>
 T sample(const int N, const int M, const std::vector<T> &qf, const SCALAR u, const SCALAR v)
 {
     int x = static_cast<int>(u);
-    x = max(0, min(N - 1, x));
+    x = max<int>(0, min<int>(N - 1, x));
     int y = static_cast<int>(v);
-    y = max(0, min(M - 1, y));
+    y = max<int>(0, min<int>(M - 1, y));
     return qf[IXY(x, y, N)];
 }
 
@@ -253,7 +260,8 @@ void add_source(const int N, int x, int y, int r, SCALAR value, VEC dir, std::ve
             int index = IXY(x + i, y + j, N);
             SCALAR smooth = smooth_step<SCALAR>(r * r, i * i + j * j);
             smooth *= value;
-            // smooth = min(smooth, 1.0f - dye[index]);
+            if (index < 0 || index >= dye.size())
+                printf("Error info: index out of range {%d, %d, %d, %d, %d}\n", x, y, i, j, r);
             dye[index] = min(smooth + dye[index], 3.0f);
             vel[index] += dir * smooth * 100.0f;
         }
