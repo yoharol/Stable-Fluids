@@ -1,11 +1,11 @@
 #include "gl_api.h"
 
-bool glapi::glad_init()
+bool glapi::glew_init()
 {
     // Load glad
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    if (glewInit())
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        std::cout << "Failed to initialize GLEW" << std::endl;
         return false;
     }
     return true;
@@ -24,7 +24,7 @@ GLFWwindow *glapi::gl_create_window(const int width, const int height, char *win
     // Introduce window to current context
     glfwMakeContextCurrent(window);
 
-    if (!glad_init())
+    if (!glew_init())
         return NULL;
 
     glViewport(0, 0, width, height);

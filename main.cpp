@@ -37,6 +37,8 @@ int main()
 
     char window_name[13] = "stable fluid";
     GLFWwindow *window = glapi::gl_create_window(N, M, window_name);
+    if (window == NULL)
+        return 0;
 
     FPS_Counter counter;
     counter.ResetCounter();
@@ -97,12 +99,12 @@ int main()
 
         glapi::gl_draw_tex2d(texName);
 
-        /*counter.AddCount();
+        counter.AddCount();
         if (counter.GetTime() >= 1.0)
         {
             printf("\rFPS: %d", counter.GetFPS());
             counter.ResetCounter();
-        }*/
+        }
         // DrawArray<VEC>(N, M, color_buffer);
         glapi::gl_update_window(window);
     }

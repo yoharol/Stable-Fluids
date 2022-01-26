@@ -10,13 +10,13 @@ if(glfw3_FOUND)
 endif()
 
 find_package(Eigen3 REQUIRED)
-if(glfw3_FOUND)
-    message("glfw3 loaded: ${glfw3_DIR}")
+if(Eigen3_FOUND)
+    message("Eigen3 loaded: ${Eigen3_DIR}")
 endif()
 
-find_package(glfw3 REQUIRED)
-if(glfw3_FOUND)
-    message("glfw3 loaded: ${glfw3_DIR}")
+find_package(GLEW REQUIRED)
+if(GLEW_FOUND)
+    message("GLEW loaded: ${glfw3_DIR}")
 endif()
 
 add_executable(demo)
@@ -25,7 +25,6 @@ target_sources(demo
     PRIVATE
     ${CMAKE_SOURCE_DIR}/main.cpp
     ${CMAKE_SOURCE_DIR}/src/gl_api.cpp
-    ${CMAKE_SOURCE_DIR}/src/glad.c
 )
 
 target_include_directories(demo
@@ -37,4 +36,5 @@ target_link_libraries(demo
     PRIVATE
     glfw
     Eigen3::Eigen
+    GLEW::GLEW
 )
