@@ -4,19 +4,32 @@ project(fluid_simulation)
 
 set(CMAKE_BUILD_TYPE "Release")
 
+set(link_lib "")
+
 find_package(glfw3 REQUIRED)
 if(glfw3_FOUND)
     message("glfw3 loaded: ${glfw3_DIR}")
+    list(APPEND link_lib glfw)
 endif()
 
 find_package(Eigen3 REQUIRED)
 if(Eigen3_FOUND)
     message("Eigen3 loaded: ${Eigen3_DIR}")
+    list(APPEND link_lib Eigen3::Eigen)
 endif()
 
 find_package(GLEW REQUIRED)
 if(GLEW_FOUND)
-    message("GLEW loaded: ${glfw3_DIR}")
+    message("GLEW loaded: ${GLEW_SHARED_LIBRARIES}")
+    list(APPEND link_lib GLEW::GLEW)
+endif()
+
+if(UNIX)
+    find_package(OpenGL)
+    if(OpenGL_FOUND)
+        message("OpenGL loaded: ${OPENGL_INCLUDE_DIR}")
+        list(APPEND link_lib ${OPENGL_LIBRARIES})
+    endif()
 endif()
 
 add_executable(demo)
@@ -34,7 +47,5 @@ target_include_directories(demo
 
 target_link_libraries(demo
     PRIVATE
-    glfw
-    Eigen3::Eigen
-    GLEW::GLEW
+    ${link_lib}
 )
