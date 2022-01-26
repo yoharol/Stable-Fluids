@@ -43,8 +43,6 @@ target_sources(demo
 target_include_directories(demo
     PRIVATE
     "${CMAKE_SOURCE_DIR}/include"
-    "${GLEW_INCLUDE_DIRS}"
-    "${glfw3_INCLUDE_DIRS}"
 )
 
 target_link_libraries(demo
