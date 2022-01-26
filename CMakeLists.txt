@@ -37,4 +37,5 @@ target_link_libraries(demo
     glfw
     Eigen3::Eigen
     GLEW::GLEW
+    ${OPENGL_LIBRARIES}
 )
