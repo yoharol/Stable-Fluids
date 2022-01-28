@@ -1,7 +1,6 @@
 #ifndef STABLE_FLUID
 #define STABLE_FLUID
 
-#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>

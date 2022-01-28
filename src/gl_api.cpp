@@ -1,16 +1,5 @@
 #include "gl_api.h"
 
-/*bool glapi::glew_init()
-{
-    // Load glad
-    if (glewInit())
-    {
-        std::cout << "Failed to initialize GLEW" << std::endl;
-        return false;
-    }
-    return true;
-}*/
-
 GLFWwindow *glapi::gl_create_window(const int width, const int height, char *window_name)
 {
     glfwInit();
@@ -23,10 +12,6 @@ GLFWwindow *glapi::gl_create_window(const int width, const int height, char *win
     }
     // Introduce window to current context
     glfwMakeContextCurrent(window);
-
-    // if (!glew_init())
-    //    return NULL;
-
     glViewport(0, 0, width, height);
 
     return window;

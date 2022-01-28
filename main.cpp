@@ -1,5 +1,4 @@
 #include <Eigen/Core>
-#include <algorithm>
 #include <random>
 
 #include "gl_api.h"
