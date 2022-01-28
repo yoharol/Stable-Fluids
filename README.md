@@ -14,12 +14,12 @@ Click on screen to add random momentum
 
 Press key to set different modes(which physical quantity to show):
 
-| key  | mode     |
-| ---- | -------- |
-| 'd'  | dye      |
-| 'v'  | velocity |
-| 'p'  | pressure |
-| 'r'  | reset    |
+| key | mode     |
+| --- | -------- |
+| 'd' | dye      |
+| 'v' | velocity |
+| 'p' | pressure |
+| 'r' | reset    |
 
 ## Compile and Run
 
@@ -39,6 +39,5 @@ cmake --build .
 
 ## Future Plan
 
-- Add GPU-based programming to improve performance
 - Include vortex method
 
