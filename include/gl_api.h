@@ -1,9 +1,9 @@
 #ifndef GL_API
 #define GL_API
 
-#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <map>
 #include <vector>
 
 class FPS_Counter
@@ -38,8 +38,6 @@ class FPS_Counter
 namespace glapi
 {
 
-bool glew_init();
-
 GLFWwindow *gl_create_window(const int width, const int height, char *window_name);
 
 void gl_update_window(GLFWwindow *window);
@@ -48,7 +46,9 @@ void gl_end(GLFWwindow *window);
 
 void gl_allocate_gltex(GLuint &texName);
 
-void gl_draw_tex2d(const GLuint texName);
+void gl_draw_tex2d(const GLuint texName, const double texpos[4][2]);
+
+unsigned char gl_get_key(GLFWwindow *window, std::map<unsigned char, unsigned char> &key_binding);
 
 } // namespace glapi
 

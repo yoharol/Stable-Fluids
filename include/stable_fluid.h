@@ -1,11 +1,11 @@
 #ifndef STABLE_FLUID
 #define STABLE_FLUID
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <vector>
-
 #include <iostream>
+#include <vector>
 
 /**
  * @brief Data aggregation of current and next frame
@@ -274,15 +274,35 @@ void add_source(const int N, int x, int y, int r, SCALAR value, VEC dir, std::ve
  * @param sf scalar field to show
  */
 template <typename SCALAR>
-void fill_color_buffer(const int N, const int M, const std::vector<SCALAR> &sf, unsigned char color_buffer[])
+void fill_color_buffer(const int N, const int M, const std::vector<SCALAR> &sf, unsigned char color_buffer[][3],
+                       const SCALAR coe[2])
 {
     for (int i = 0; i < N; i++)
         for (int j = 0; j < M; j++)
         {
             int index = IXY(i, j, N);
-            SCALAR s = log(sf[index] * 0.25f + 1.0f);
-            SCALAR s3 = 4.0f * s * s * s;
-            color_buffer[index] = static_cast<unsigned char>(255.f * min(s3, 1.0f));
+            SCALAR s = log(abs(sf[index]) * coe[0] + 1.0f);
+            SCALAR s3 = coe[1] * s * s * s;
+            color_buffer[index][0] = static_cast<unsigned char>(255.f * min(s3, 1.0f));
+            color_buffer[index][1] = SCALAR(0);
+            color_buffer[index][2] = SCALAR(0);
+        }
+}
+
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+void fill_color_buffer(const int N, const int M, const std::vector<VEC> &sf, unsigned char color_buffer[][3],
+                       const SCALAR coe[2])
+{
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+        {
+            int index = IXY(i, j, N);
+            SCALAR s = log(abs(sf[index](0)) * coe[0] + 1.0f);
+            SCALAR s3 = coe[1] * s * s * s;
+            color_buffer[index][0] = static_cast<unsigned char>(255.f * min(s3, 1.0f));
+            s = log(abs(sf[index](1)) * coe[0] + 1.0f);
+            s3 = coe[1] * s * s * s;
+            color_buffer[index][1] = static_cast<unsigned char>(255.f * min(s3, 1.0f));
         }
 }
 

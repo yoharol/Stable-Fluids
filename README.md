@@ -6,15 +6,28 @@ This project implements the most basic fluid simulation:
 
 ![thumbnail](thumbnail.png)
 
-## How to play
+## Run this program
 
 Download [windows build](https://github.com/yoharol/Stable-Fluids/releases/tag/v1.0)
 
 Click on screen to add random momentum
 
+Press key to set different modes(which physical quantity to show):
+
+| key  | mode     |
+| ---- | -------- |
+| 'd'  | dye      |
+| 'v'  | velocity |
+| 'p'  | pressure |
+| 'r'  | reset    |
+
 ## Compile and Run
 
-There's no external package required.
+External package required:
+
+- GLFW
+- OpenGL
+- Eigen3
 
 ```shell
 mkdir build
