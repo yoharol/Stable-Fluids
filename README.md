@@ -29,15 +29,9 @@ External package required:
 - OpenGL
 - Eigen3
 
-```shell
-mkdir build
-cd ./build
-cmake ..
-cmake --build .
-./demo
-```
+Build tool: CMake
 
 ## Future Plan
 
-- Include vortex method
+- Implement better solver rather than Gauss-Seidel method
 
