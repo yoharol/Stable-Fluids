@@ -30,9 +30,13 @@ int main()
 
     SCALAR g = -9.8f;
 
+    const SCALAR vorticity_strength = 8.0f;
+
     std::vector<VEC> vel(NN, VEC::Zero());
     std::vector<VEC> new_vel(NN, VEC::Zero());
     std::vector<SCALAR> divergence(NN, 0);
+    std::vector<SCALAR> curl(NN, 0);
+    std::vector<VEC> vorticity_force(NN, VEC::Zero());
     std::vector<SCALAR> pressure(NN, 0);
     std::vector<SCALAR> new_pressure(NN, 0);
     std::vector<SCALAR> dye(NN, 0);
@@ -88,7 +92,7 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         // advection of velocity field and dye field
-        advection<VEC, VEC>(N, M, vel_tex.cur, vel_tex.cur, vel_tex.nxt, dt, damping);
+        advection_velocity<VEC>(N, M, vel_tex.cur, vel_tex.nxt, dt, damping);
         advection<SCALAR, VEC>(N, M, vel_tex.cur, dye_tex.cur, dye_tex.nxt, dt, damping);
         vel_tex.Swap();
         dye_tex.Swap();
@@ -154,6 +158,10 @@ int main()
 
         // apply global force to velocity field
         apply_force<VEC>(N, M, vel_tex.cur, g, dt);
+
+        // vorticity confinement
+        get_curl(N, M, vel_tex.cur, curl);
+        vorticity_confinement<VEC>(N, M, vel_tex.cur, curl, vorticity_force, vorticity_strength, dt);
 
         // solve divergence and pressure
         get_divergence<VEC>(N, M, vel_tex.cur, divergence);

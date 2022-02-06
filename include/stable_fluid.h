@@ -50,11 +50,6 @@ template <typename T, typename SCALAR> inline T lerp(T l, T r, SCALAR t)
     return l + t * (r - l);
 }
 
-template <typename SCALAR> inline bool check_in_range(SCALAR a, SCALAR b, SCALAR t)
-{
-    return (a > t) || (b < t);
-}
-
 /**
  * @brief Get qf[u, v]
  */
@@ -91,6 +86,37 @@ T bilerp(const int N, const int M, const std::vector<T> &qf, const VEC &p)
     return lerp<T, SCALAR>(lerp<T, SCALAR>(a, b, fu), lerp<T, SCALAR>(c, d, fu), fv);
 }
 
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+SCALAR bilerp_velocity(const int N, const int M, const std::vector<VEC> &qf, const VEC &p, int index)
+{
+    SCALAR s, t;
+    if (index == 0)
+    {
+        s = p(0);
+        t = p(1) - 0.5f;
+    }
+    else if (index == 1)
+    {
+        s = p(0) - 0.5f;
+        t = p(1);
+    }
+    else
+    {
+        printf("Error! No accessible index\n");
+        assert(true);
+        return 0.0f;
+    }
+    SCALAR iu = floor(s);
+    SCALAR iv = floor(t);
+    SCALAR fu = s - iu;
+    SCALAR fv = t - iv;
+    VEC a = sample<VEC, SCALAR>(N, M, qf, iu, iv);
+    VEC b = sample<VEC, SCALAR>(N, M, qf, iu + 1, iv);
+    VEC c = sample<VEC, SCALAR>(N, M, qf, iu, iv + 1);
+    VEC d = sample<VEC, SCALAR>(N, M, qf, iu + 1, iv + 1);
+    return (lerp<VEC, SCALAR>(lerp<VEC, SCALAR>(a, b, fu), lerp<VEC, SCALAR>(c, d, fu), fv))(index);
+}
+
 /**
  * @brief Locate which point will move to position p in next dt time
  *
@@ -110,6 +136,18 @@ VEC backtrace(const int N, const int M, VEC p, SCALAR dt, const std::vector<VEC>
     return p * 0.9999f;
 }
 
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+VEC backtrace_velocity(const int N, const int M, VEC p, SCALAR dt, const std::vector<VEC> &vel)
+{
+    VEC v1(bilerp_velocity<VEC>(N, M, vel, p, 0), bilerp_velocity<VEC>(N, M, vel, p, 1));
+    VEC p1(p(0) - 0.5 * dt * v1(0), p(1) - 0.5 * dt * v1(1));
+    VEC v2(bilerp_velocity<VEC>(N, M, vel, p1, 0), bilerp_velocity<VEC>(N, M, vel, p1, 1));
+    VEC p2(p(0) - 0.75 * dt * v2(0), p(1) - 0.75 * dt * v2(1));
+    VEC v3(bilerp_velocity<VEC>(N, M, vel, p2, 0), bilerp_velocity<VEC>(N, M, vel, p2, 1));
+    p = p + (-1.f) * dt * ((2.f / 9.f) * v1 + (1.f / 3.f) * v2 + (4.f / 9.f) * v3);
+    return p * 0.9999f;
+}
+
 /**
  * @brief update advection of fluid property qf
  * @param N width
@@ -125,11 +163,38 @@ void advection(const int N, const int M, const std::vector<VEC> &vel, const std:
     {
         for (int j = 0; j < M; j++)
         {
-            VEC p(i, j);
-            p += VEC(.5f, .5f);
+            VEC p(i + .5f, j + .5f);
             p = backtrace<VEC>(N, M, p, dt, vel) * damping;
 
             new_qf[IXY(i, j, N)] = bilerp<T, VEC>(N, M, qf, p);
+        }
+    }
+}
+
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+void advection_velocity(const int N, const int M, const std::vector<VEC> &vel, std::vector<VEC> &new_qf, SCALAR dt,
+                        SCALAR damping = 0.9999f)
+{
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < M; j++)
+        {
+            if (i == 0 || i == N - 1)
+                new_qf[IXY(i, j, N)](0) = 0.0f;
+            else
+            {
+                VEC p(i, j + 0.5f);
+                p = backtrace_velocity<VEC>(N, M, p, dt, vel) * damping;
+                new_qf[IXY(i, j, N)](0) = bilerp_velocity<VEC>(N, M, vel, p, 0) * damping;
+            }
+            if (j == 0 || j == M - 1)
+                new_qf[IXY(i, j, N)](1) = 0.0f;
+            else
+            {
+                VEC p(i + 0.5f, j);
+                p = backtrace_velocity<VEC>(N, M, p, dt, vel) * damping;
+                new_qf[IXY(i, j, N)](1) = bilerp_velocity<VEC>(N, M, vel, p, 1) * damping;
+            }
         }
     }
 }
@@ -164,21 +229,55 @@ void get_divergence(const int N, const int M, const std::vector<VEC> &vel, std::
     for (int i = 0; i < N; i++)
         for (int j = 0; j < M; j++)
         {
-            SCALAR vl = sample<VEC, SCALAR>(N, M, vel, i - 1, j)(0);
+            SCALAR vl = sample<VEC, SCALAR>(N, M, vel, i, j)(0);
             SCALAR vr = sample<VEC, SCALAR>(N, M, vel, i + 1, j)(0);
-            SCALAR vb = sample<VEC, SCALAR>(N, M, vel, i, j - 1)(1);
+            SCALAR vb = sample<VEC, SCALAR>(N, M, vel, i, j)(1);
             SCALAR vt = sample<VEC, SCALAR>(N, M, vel, i, j + 1)(1);
-            SCALAR vc_u = sample<VEC, SCALAR>(N, M, vel, i, j)(0);
-            SCALAR vc_v = sample<VEC, SCALAR>(N, M, vel, i, j)(1);
-            if (i == 0)
-                vl = -vc_u;
-            else if (i == N - 1)
-                vr = -vc_u;
-            if (j == 0)
-                vb = -vc_v;
-            else if (j == N - 1)
-                vt = -vc_v;
-            divergence[IXY(i, j, N)] = (vr - vl + vt - vb) * .5f;
+            divergence[IXY(i, j, N)] = vr - vl + vt - vb;
+        }
+}
+
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+void get_curl(const int N, const int M, const std::vector<VEC> &vel, std::vector<SCALAR> &curl)
+{
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+        {
+            SCALAR vl = bilerp_velocity<VEC>(N, M, vel, VEC(i, j + 0.5f), 1);
+            SCALAR vr = bilerp_velocity<VEC>(N, M, vel, VEC(i + 1.0f, j + 0.5f), 1);
+            SCALAR vt = bilerp_velocity<VEC>(N, M, vel, VEC(i + 0.5, j + 1.0f), 0);
+            SCALAR vb = bilerp_velocity<VEC>(N, M, vel, VEC(i + 0.5f, j), 0);
+            curl[IXY(i, j, N)] = vr - vt - vl + vb;
+        }
+}
+
+template <typename VEC, typename SCALAR = typename VEC::Scalar>
+void vorticity_confinement(const int N, const int M, std::vector<VEC> &vel, const std::vector<SCALAR> &curl,
+                           std::vector<VEC> &curl_force, const SCALAR curl_strength, const SCALAR dt)
+{
+    static const SCALAR scale = 1e-3f;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+        {
+            SCALAR cl = sample<SCALAR, SCALAR>(N, M, curl, i - 1, j);
+            SCALAR cr = sample<SCALAR, SCALAR>(N, M, curl, i + 1, j);
+            SCALAR cb = sample<SCALAR, SCALAR>(N, M, curl, i, j - 1);
+            SCALAR ct = sample<SCALAR, SCALAR>(N, M, curl, i, j + 1);
+            SCALAR cc = sample<SCALAR, SCALAR>(N, M, curl, i, j);
+            curl_force[IXY(i, j, N)] = VEC(abs(ct) - abs(cb), abs(cl) - abs(cr));
+            curl_force[IXY(i, j, N)].normalize();
+            curl_force[IXY(i, j, N)] *= curl_strength * cc * dt;
+        }
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+        {
+            VEC cl = sample<VEC, SCALAR>(N, M, curl_force, i - 1, j);
+            VEC cb = sample<VEC, SCALAR>(N, M, curl_force, i, j - 1);
+            VEC cc = sample<VEC, SCALAR>(N, M, curl_force, i, j);
+            SCALAR fl = (cl - cc)(0);
+            SCALAR fb = (cb - cc)(1);
+            vel[IXY(i, j, N)](0) = min<SCALAR>(1e4f, max<SCALAR>(-1e4f, vel[IXY(i, j, N)](0) + fl));
+            vel[IXY(i, j, N)](1) = min<SCALAR>(1e4f, max<SCALAR>(-1e4f, vel[IXY(i, j, N)](1) + fb));
         }
 }
 
@@ -219,10 +318,10 @@ void subtract_gradient(const int N, const int M, std::vector<VEC> &vel, const st
         for (int j = 0; j < M; j++)
         {
             SCALAR pl = sample<SCALAR, SCALAR>(N, M, pressure, i - 1, j);
-            SCALAR pr = sample<SCALAR, SCALAR>(N, M, pressure, i + 1, j);
             SCALAR pb = sample<SCALAR, SCALAR>(N, M, pressure, i, j - 1);
-            SCALAR pt = sample<SCALAR, SCALAR>(N, M, pressure, i, j + 1);
-            vel.at(IXY(i, j, N)) -= 0.5f * VEC(pr - pl, pt - pb);
+            SCALAR pc = sample<SCALAR, SCALAR>(N, M, pressure, i, j);
+            vel[IXY(i, j, N)](0) -= pc - pl;
+            vel[IXY(i, j, N)](1) -= pc - pb;
         }
 }
 
