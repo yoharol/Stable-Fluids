@@ -32,6 +32,8 @@ External package required:
 Build tool: CMake
 
 ## Future Plan
-
-- Implement better solver rather than Gauss-Seidel method
+- [x] MAC grid
+- [x] Vortex Confinement
+- [ ] Better large-scale linear equation solver
+- [ ] Calculate on GPU
 

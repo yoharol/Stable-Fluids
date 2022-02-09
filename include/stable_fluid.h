@@ -90,12 +90,12 @@ template <typename VEC, typename SCALAR = typename VEC::Scalar>
 SCALAR bilerp_velocity(const int N, const int M, const std::vector<VEC> &qf, const VEC &p, int index)
 {
     SCALAR s, t;
-    if (index == 0)
+    if (index == 0) // Sample horizontal velocity
     {
         s = p(0);
         t = p(1) - 0.5f;
     }
-    else if (index == 1)
+    else if (index == 1) // Sample vertival velocity
     {
         s = p(0) - 0.5f;
         t = p(1);
